@@ -12,6 +12,16 @@ import random, util
 
 from game import Agent
 
+
+def distanceTo(foodList, pacmanPos):
+  dist = [manhattanDistance(pacmanPos, foodxy) for foodxy in foodList]
+  dist.sort()
+  if len(dist) > 0:
+      return dist
+  else:
+      return [1]
+  
+MINUS_INF = -10000000
 class ReflexAgent(Agent):
   """
     A reflex agent chooses an action at each choice point by examining
@@ -21,6 +31,12 @@ class ReflexAgent(Agent):
     it in any way you see fit, so long as you don't touch our method
     headers.
   """
+  def __init__(self, evalFn = 'scoreEvaluationFunction', depth = '2'):
+    self.index = 0 # Pacman is always agent index 0
+    self.lastMove = []
+    self.lastMove.append(Directions.STOP)
+    self.lastMove.append(Directions.STOP)
+    self.lastMove.append(Directions.STOP)
 
 
   def getAction(self, gameState):
@@ -45,6 +61,9 @@ class ReflexAgent(Agent):
 
     return legalMoves[chosenIndex]
 
+
+          
+
   def evaluationFunction(self, currentGameState, action):
     """
     Design a better evaluation function here.
@@ -62,13 +81,36 @@ class ReflexAgent(Agent):
     """
     # Useful information you can extract from a GameState (pacman.py)
     successorGameState = currentGameState.generatePacmanSuccessor(action)
-    newPos = successorGameState.getPacmanPosition()
+    newPacmanPos = successorGameState.getPacmanPosition()
+    
+    #a grid[x][y] return T if [x][y] has food F otherwise
     newFood = successorGameState.getFood()
+    #number of food left
+    newFoodCount = newFood.count()
+    #return a list of (x, y) that currently has food on it
+    newFoodList = newFood.asList()
+    #return a list (x,y) of capsules
+    newCapsules = successorGameState.getCapsules()    
+    
     newGhostStates = successorGameState.getGhostStates()
+    newGhostPossitions = [s.getPosition() for s in newGhostStates]
     newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
     "*** YOUR CODE HERE ***"
-    return successorGameState.getScore()
+    #check if next pos for ghost.. if there is ghost then never go that way
+    if action == Directions.STOP:
+        currentUtility = -100
+    else:
+        currentUtility = successorGameState.getScore()  
+        
+    currentUtility += 5.0/distanceTo(newFoodList, newPacmanPos)[0]
+    currentUtility += 10.0/distanceTo(newCapsules, newPacmanPos)[0]
+    for ghostPos in newGhostPossitions:
+        if manhattanDistance(newPacmanPos, ghostPos) <2:
+            currentUtility = -1000000
+
+    return currentUtility
+
 
 def scoreEvaluationFunction(currentGameState):
   """
@@ -99,6 +141,7 @@ class MultiAgentSearchAgent(Agent):
     self.index = 0 # Pacman is always agent index 0
     self.evaluationFunction = util.lookup(evalFn, globals())
     self.depth = int(depth)
+    self.lastMove = Directions.STOP
 
 class MinimaxAgent(MultiAgentSearchAgent):
   """
