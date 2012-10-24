@@ -20,8 +20,8 @@ def distanceTo(foodList, pacmanPos):
       return dist
   else:
       return [1]
-  
-MINUS_INF = -10000000
+INF = 100000000
+MINUS_INF = -100000000
 class ReflexAgent(Agent):
   """
     A reflex agent chooses an action at each choice point by examining
@@ -148,6 +148,33 @@ class MinimaxAgent(MultiAgentSearchAgent):
     Your minimax agent (question 2)
   """
 
+  """
+  def maxValue(self, gameState, depth):
+      v = -INF      
+      for action in gameState.getLegalActions(0):
+          state = gameState.generateSuccessor(0, action)
+          v= max(v, value(state, depth))
+      return v
+  def minValue(self, gameState, depth, ghostNum):
+      v = INF
+      for action in gameState.getLegalActions(ghostNum):
+          state = gameState.generateSuccessor(ghostNum, action)
+          v= min(v, value(state, depth))
+      return v
+  def value(self, gameState, depth):
+      if depth == 0:
+          return self.evaluationFunction(gameState)
+      else:
+          depth--
+
+  def value(self, gameState):
+      if gameState.isWin() or gameState.isLose():
+          return 0;
+  def getMaxValue(self, pacmanStates, depth, evalFn):
+      if depth == 0:
+          return max()
+      v = -INF
+  """    
   def getAction(self, gameState):
     """
       Returns the minimax action from the current gameState using self.depth
@@ -169,8 +196,62 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns the total number of agents in the game
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
 
+    numOfGhost = gameState.getNumAgents() - 1
+    #pacmanLegalActions = gameState.getLegalActions(0)
+    #pacmanLegalActions.remove(Directions.STOP)
+    #nextPacmanStates = [gameState.generateSuccessor(0, action) for action in pacmanLegalActions]
+    def getBestActionGhost(numGhost, evalFn, gameState, depth):
+        if numGhost == 1:
+            ghostLegalActions = gameState.getLegalActions(numGhost)
+            v = INF
+            for action in ghostLegalActions:
+                successor = gameState.generateSuccessor(numGhost, action)
+                if depth == 1:
+                    value = evalFn(successor)
+                else:
+                    #check successor if paman alive
+                    #if he's alive then call to get back value with depth-1
+                    if len(successor.getLegalActions(0))!=0:
+                        pAction, value = getBestActionPacman(depth - 1, evalFn, successor)
+                    else:        #if he's dead then
+                        value = -INF 
+                v = min(v, value)
+            return v
+        else:
+            ghostLegalActions = gameState.getLegalActions(numGhost)
+            v = INF
+            for action in ghostLegalActions:
+                successor = gameState.generateSuccessor(numGhost, action)
+                value = getBestActionGhost(numGhost -1, evalFn, successor, depth)
+                v = min(v, value)
+            return v
+                
+            
+    def getBestActionPacman(depth, evalFn, gameState):
+        pacmanLegalActions = gameState.getLegalActions(0)
+        #pacmanLegalActions.remove(Directions.STOP)
+        #print gameState
+        v = -INF
+        #print v
+        bestPacmanAction = pacmanLegalActions[0]
+        for action in pacmanLegalActions:
+            successor = gameState.generateSuccessor(0, action)
+            value = getBestActionGhost(numOfGhost, evalFn, successor, depth)
+            if v < value:
+                v = value
+                bestPacmanAction = action
+        #print v
+        #raw_input("---")
+        return (bestPacmanAction, v)
+    
+    
+    returnPacmanAction, v = getBestActionPacman(self.depth, self.evaluationFunction, gameState)
+    #raw_input("---")
+    return returnPacmanAction
+    
+    
+      
 class AlphaBetaAgent(MultiAgentSearchAgent):
   """
     Your minimax agent with alpha-beta pruning (question 3)
