@@ -262,7 +262,63 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
       Returns the minimax action using self.depth and self.evaluationFunction
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    numOfGhost = gameState.getNumAgents() - 1
+    """
+    Max node will check beta if value >= beta then return value  (No need to check more)
+    Min node will check alpha: if value <= alpha then return value (no need to check more
+    """
+    def getBestActionGhost(numGhost, evalFn, gameState, depth, alpha, beta):
+        if numGhost == 1:
+            ghostLegalActions = gameState.getLegalActions(numGhost)
+            v = INF
+            for action in ghostLegalActions:
+                successor = gameState.generateSuccessor(numGhost, action)
+                if depth == 1:
+                    value = evalFn(successor)
+                else:
+                    #check successor if paman alive
+                    #if he's alive then call to get back value with depth-1
+                    if len(successor.getLegalActions(0))!=0:
+                        value = getBestActionPacman(depth - 1, evalFn, successor, alpha, beta)[1]
+                    else:        #if he's dead then
+                        value = -INF 
+                v = min(v, value)
+                if v<= alpha:
+                    return v
+                beta = min(beta, v)
+            return v
+        else:
+            ghostLegalActions = gameState.getLegalActions(numGhost)
+            v = INF
+            for action in ghostLegalActions:
+                successor = gameState.generateSuccessor(numGhost, action)
+                value = getBestActionGhost(numGhost -1, evalFn, successor, depth, alpha, beta)
+                v = min(v, value)
+                if v<= alpha:
+                    return v
+                beta = min(beta, v)
+            return v
+                
+            
+    def getBestActionPacman(depth, evalFn, gameState, alpha, beta):
+        pacmanLegalActions = gameState.getLegalActions(0)
+        v = -INF
+        bestPacmanAction = pacmanLegalActions[0]
+        for action in pacmanLegalActions:
+            successor = gameState.generateSuccessor(0, action)
+            value = getBestActionGhost(numOfGhost, evalFn, successor, depth, alpha, beta)
+            if v < value:
+                v = value
+                bestPacmanAction = action
+            if v >= beta:
+                return (bestPacmanAction, v)
+            alpha = max(alpha, v)
+        return (bestPacmanAction, v)
+    
+    
+    returnPacmanAction, v = getBestActionPacman(self.depth, self.evaluationFunction, gameState, -INF, INF)
+    #raw_input("---")
+    return returnPacmanAction
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
   """
