@@ -19,7 +19,7 @@ def distanceTo(foodList, pacmanPos):
   if len(dist) > 0:
       return dist
   else:
-      return [1]
+      return [0]
 INF = 100000000
 MINUS_INF = -100000000
 class ReflexAgent(Agent):
@@ -103,8 +103,9 @@ class ReflexAgent(Agent):
     else:
         currentUtility = successorGameState.getScore()  
         
-    currentUtility += 5.0/distanceTo(newFoodList, newPacmanPos)[0]
-    currentUtility += 10.0/distanceTo(newCapsules, newPacmanPos)[0]
+    currentUtility += 1.0/distanceTo(newFoodList, newPacmanPos)[0]
+    currentUtility += 5.0/newFoodCount
+    #currentUtility += 10.0/distanceTo(newCapsules, newPacmanPos)[0]
     for ghostPos in newGhostPossitions:
         if manhattanDistance(newPacmanPos, ghostPos) <2:
             currentUtility = -1000000
@@ -147,34 +148,6 @@ class MinimaxAgent(MultiAgentSearchAgent):
   """
     Your minimax agent (question 2)
   """
-
-  """
-  def maxValue(self, gameState, depth):
-      v = -INF      
-      for action in gameState.getLegalActions(0):
-          state = gameState.generateSuccessor(0, action)
-          v= max(v, value(state, depth))
-      return v
-  def minValue(self, gameState, depth, ghostNum):
-      v = INF
-      for action in gameState.getLegalActions(ghostNum):
-          state = gameState.generateSuccessor(ghostNum, action)
-          v= min(v, value(state, depth))
-      return v
-  def value(self, gameState, depth):
-      if depth == 0:
-          return self.evaluationFunction(gameState)
-      else:
-          depth--
-
-  def value(self, gameState):
-      if gameState.isWin() or gameState.isLose():
-          return 0;
-  def getMaxValue(self, pacmanStates, depth, evalFn):
-      if depth == 0:
-          return max()
-      v = -INF
-  """    
   def getAction(self, gameState):
     """
       Returns the minimax action from the current gameState using self.depth
@@ -333,17 +306,110 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
       legal moves.
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    numOfGhost = gameState.getNumAgents() - 1
+    
+    def getBestActionGhost(numGhost, evalFn, gameState, depth):
+        if numGhost == 1:
+            ghostLegalActions = gameState.getLegalActions(numGhost)
+            v = 0
+            for action in ghostLegalActions:
+                successor = gameState.generateSuccessor(numGhost, action)
+                if depth == 1:
+                    value = evalFn(successor)
+                else:
+                    #check successor if paman alive
+                    #if he's alive then call to get back value with depth-1
+                    if len(successor.getLegalActions(0))!=0:
+                        pAction, value = getBestActionPacman(depth - 1, evalFn, successor)
+                    else:        #if he's dead then
+                        value = evalFn(successor) 
+                v += value
+            if len(ghostLegalActions) !=0:
+                return (v/len(ghostLegalActions))
+            else:
+                return 0
+        else:
+            ghostLegalActions = gameState.getLegalActions(numGhost)
+            v = 0
+            for action in ghostLegalActions:
+                successor = gameState.generateSuccessor(numGhost, action)
+                value = getBestActionGhost(numGhost -1, evalFn, successor, depth)
+                v += value
+            if len(ghostLegalActions) != 0:
+                return (v/len(ghostLegalActions))
+            else:
+                return 0
+                
+            
+    def getBestActionPacman(depth, evalFn, gameState):
+        pacmanLegalActions = gameState.getLegalActions(0)
+        #pacmanLegalActions.remove(Directions.STOP)
+        #print gameState
+        v = -INF
+        #print v
+        bestPacmanAction = pacmanLegalActions[0]
+        for action in pacmanLegalActions:
+            successor = gameState.generateSuccessor(0, action)
+            value = getBestActionGhost(numOfGhost, evalFn, successor, depth)
+            if v < value:
+                v = value
+                bestPacmanAction = action
+        #print v
+        #raw_input("---")
+        return (bestPacmanAction, v)
+    
+    
+    returnPacmanAction, v = getBestActionPacman(self.depth, self.evaluationFunction, gameState)
+    #raw_input("---")
+    return returnPacmanAction
+
 
 def betterEvaluationFunction(currentGameState):
-  """
-    Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
-    evaluation function (question 5).
+    """
+      Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
+      evaluation function (question 5).
+    
+      DESCRIPTION: <write something here so we know what you did>
+    """
+    "*** YOUR CODE HERE ***"
+    
 
-    DESCRIPTION: <write something here so we know what you did>
-  """
-  "*** YOUR CODE HERE ***"
-  util.raiseNotDefined()
+    
+    #a grid[x][y] return T if [x][y] has food F otherwise
+    foodGrid = currentGameState.getFood()
+    #number of food left
+    foodCount = foodGrid.count() +1
+    #return a list of (x, y) that currently has food on it
+    foodList = foodGrid.asList()
+    #return a list (x,y) of capsules
+    capsules = currentGameState.getCapsules()
+    capsulesLeft = 1 + len(capsules)    
+    
+    ghostStates = currentGameState.getGhostStates()
+    ghostPossitions = [s.getPosition() for s in ghostStates]
+    scaredTimes = [gs.scaredTimer for gs in ghostStates]
+    #newPacmanPos = successorGameState.getPacmanPosition()
+    pacmanPos = currentGameState.getPacmanPosition()
+    
+    "*** YOUR CODE HERE ***"
+    #check if next pos for ghost.. if there is ghost then never go that way
+    
+    
+    distanceToFoods = [d for d in distanceTo(foodList, pacmanPos)]
+    #distanceToGhosts = [d for d in distanceTo(ghostPossitions, pacmanPos)]
+    distanceToCapsules = [d for d in distanceTo(capsules, pacmanPos)]
+    
+    
+    currentUtility = 88*currentGameState.getScore()  
+    #currentUtility -= 10.0*foodCount
+    currentUtility -= 888.0*distanceToFoods[-1]
+
+    currentUtility += 88888.0*capsulesLeft
+    print capsulesLeft
+    print currentUtility
+    #currentUtility -= 100.0*distanceToCapsules[0]
+
+    return currentUtility
 
 # Abbreviation
 better = betterEvaluationFunction
